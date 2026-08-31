@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Edge72</title>
+
+  <!-- Alpine -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body { margin: 0; font-family: Arial; }
+
+    #map {
+      height: 100vh;
+      /* width: 100%; */
+    }
+
+    .topbar {
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      /* background: #fff; */
+      padding: 10px;
+      border-radius: 8px;
+      /* box-shadow: 0 4px 10px rgba(0,0,0,0.2); */
+    }
+
+    select {
+      /* padding: 6px; */
+      height: 36px;
+      width: 300px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+<div x-data="app()" x-init="init()">
+
+  <!-- 🔥 SELECT DROPDOWN -->
+  <div class="topbar">
+    <select @change="onSelect($event)">
+      <option value="">-- Chọn Địa Điểm --</option>
+
+      <!-- <template x-for="store in stores" :key="store.id">
+        <option :value="store.id" x-text="store.name"></option>
+      </template> -->
+
+
+      <template x-for="(g, group) in groupedStores" :key="group">
+        <optgroup :label="group">
+          <template x-for="store in g" :key="store.id">
+            <option :value="store.id" x-text="store.name"></option>
+            <hr>
+          </template>
+        </optgroup>
+      </template>
+    </select>
+  </div>
+
+  <!-- MAP -->
+  <div id="map"></div>
+</div>
+
+<script>
+function app() {
+  return {
+    map: null,
+    markers: [],
+    stores: [
+      // { id: 1, name: "Điện Máy Xanh Q1", lat: 10.7758, lng: 106.7004, address: "Quận 1", district: "Quận 1" },
+      // { id: 4, name: "Điện Máy Xanh Q1", lat: 10.7758, lng: 106.7004, address: "Quận 1", district: "Quận 1" },
+      // { id: 2, name: "Điện Máy Xanh Thủ Đức", lat: 10.8496, lng: 106.7723, address: "Thủ Đức", district: "Thủ Đức" },
+      // { id: 3, name: "Điện Máy Xanh Bình Tân", lat: 10.7423, lng: 106.6030, address: "Bình Tân", district: "Bình Tân" }
+      {
+        id: 1,
+        name: "The Oasis Glamping",
+        lat: "10.422510790435256",
+        lng: "107.2577314032263",
+        address: "Đ Phước Hưng Phước Hải",
+        linkGoogle: "https://www.google.com/maps/place/The+Oasis+Glamping/@10.4222259,107.2556178,17z/data=!4m6!3m5!1s0x317575ac6d323ac1:0xb3f77605c884bb6b!8m2!3d10.4224211!4d107.2570233!16s%2Fg%2F11svwznnx5?entry=ttu&g_ep=EgoyMDI2MDcxNS4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0786 555 039",
+        group: "Glamping"
+      },
+
+      {
+        id: 2,
+        name: "The Leaf Cafe & Glamping",
+        lat: "10.438702325381374",
+        lng: "107.27733691532472",
+        address: "Cạnh uỷ ban xã Long Mỹ H. Đất Đỏ cũ",
+        linkGoogle: "https://www.google.com/maps/place/The+Leaf+Cafe+%26+Glamping/@10.4377527,107.2763499,17z/data=!4m9!3m8!1s0x317575891772b573:0xc6,f4b1062c8fdba1!5m2!4m1!1i2!8m2!3d10.4384913!4d107.277294!16s%2Fg%2F11lt9txv87?entry=ttu&g_ep=EgoyMDI2MDgyNi4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0379 006 007",
+        group: "Glamping"
+      },
+      {
+        id: 3,
+        name: "Cỏ Cafe & Glamping",
+        lat: "10.428403384003234",
+        lng: "107.2833724576717",
+        address: "Đ. Bùi Công Minh, Khu phố phước điền, Phước Hải",
+        linkGoogle: "https://www.google.com/maps/place/C%E1%BB%8F+Cafe+%26+Glamping/@10.4281818,107.283351,17z/data=!3m1!4b1!4m9!3m8!1s0x317575000f6f4895:0x611e7b3a7054b9c8!5m2!4m1!1i2!8m2!3d10.4281818!4d107.283351!16s%2Fg%2F11xcrvb3jg?entry=ttu&g_ep=EgoyMDI2MDgyNi4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0364 397 988",
+        group: "Glamping"
+      },
+      {
+        id: 4,
+        name: "Phước Hải Island – Glamping & Fishing",
+        lat: "10.461960609596611",
+        lng: "107.3369946153434",
+        address: "An Hải, Lộc An, Phước Hải, Phước Hải",
+        linkGoogle: "https://www.google.com/maps/place/Ph%C6%B0%E1%BB%9Bc+H%E1%BA%A3i+Island+-+Glamping+%26+Fishing/@10.4617496,107.3369517,17z/data=!4m14!1m7!3m6!1s0x31759fa18c03b36d:0x2716989a83412783!2zUGjGsOG7m2MgSOG6o2kgSXNsYW5kIC0gR2xhbXBpbmcgJiBGaXNoaW5n!8m2!3d10.4617496!4d107.3369517!16s%2Fg%2F11x97cs0rn!3m5!1s0x31759fa18c03b36d:0x2716989a83412783!8m2!3d10.4617496!4d107.3369517!16s%2Fg%2F11x97cs0rn?entry=ttu&g_ep=EgoyMDI2MDgyNi4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0971 881 279",
+        group: "Glamping"
+      },
+      {
+        id: 5,
+        name: "BỤI Homestay & Glamping Phước Hải",
+        lat: "10.41897253877055",
+        lng: "107.28010498650755",
+        address: "Đ. Trần Phú/Góc Nguyễn Văn Linh, Phước Hải",
+        linkGoogle: "https://www.google.com/maps/place/B%E1%BB%A4I+Homestay+%26+Glamping+Ph%C6%B0%E1%BB%9Bc+H%E1%BA%A3i/@10.4187615,107.2800728,17z/data=!3m1!4b1!4m6!3m5!1s0x3175750041afc1f5:0x2d19022112c35d37!8m2!3d10.4187615!4d107.2800728!16s%2Fg%2F11vxmwj454?entry=ttu&g_ep=EgoyMDI2MDgyNi4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0906 911 193",
+        group: "Glamping"
+      },
+      {
+        id: 6,
+        name: "Ocean Ami Resort",
+        lat: 10.3861,
+        lng: 107.2585,
+        address: "DT994",
+        linkGoogle: "https://www.google.com/maps/place/Oceanami+Villa+Homestay/@10.3868124,107.2593807,18.91z/data=!4m12!1m2!2m1!1zTeG7uSBUaHXhuq1uLCBQaHVvYyBIYWkgVG93bnNoaXAsIExvbmcgRGF0IERpc3RyaWN0LCBCw6AgUuG7i2EgLSBWxaluZyBUw6B1IFByb3ZpbmNlLCBWaWV0bmFt!3m8!1s0x3175777b87749363:0x37f399c671c6d9e4!5m2!4m1!1i2!8m2!3d10.3868293!4d107.2593634!16s%2Fg%2F11t5st13rh?entry=ttu&g_ep=EgoyMDI2MDYyMy4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0837 527 888",
+        group: "Resort"
+      },
+      {
+        id: 7,
+        name: "Lan Rừng Resort",
+        lat: 10.3999,
+        lng: 107.2730,
+        address: "Đ Võ Thị Sáu",
+        linkGoogle: "https://www.google.com/maps/place/Long+H%E1%BA%A3i+Resort+Lan+R%E1%BB%ABng/@10.3996749,107.2722441,18.72z/data=!4m9!1m2!2m1!1zTeG7uSBUaHXhuq1uLCBQaHVvYyBIYWkgVG93bnNoaXAsIExvbmcgRGF0IERpc3RyaWN0LCBCw6AgUuG7i2EgLSBWxaluZyBUw6B1IFByb3ZpbmNlLCBWaWV0bmFt!3m5!1s0x3175760e07e81a8f:0x56aac170953d0264!8m2!3d10.3999811!4d107.2726402!16s%2Fg%2F11l1bqm_4s?entry=ttu&g_ep=EgoyMDI2MDYyMy4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0254 367 9939",
+        group: "Resort"
+      },
+      {
+        id: 8,
+        name: "Trân Châu Resort ",
+        lat: "10.396819395623071",
+        lng: "107.26803413641736",
+        address: "Đ Võ Thị Sáu",
+        linkGoogle: "https://www.google.com/maps/place/Tr%C3%A2n+Ch%C3%A2u+Beach+%26+Resort/@10.395966,107.268643,18.3z/data=!4m12!1m2!2m1!1zTeG7uSBUaHXhuq1uLCBQaHVvYyBIYWkgVG93bnNoaXAsIExvbmcgRGF0IERpc3RyaWN0LCBCw6AgUuG7i2EgLSBWxaluZyBUw6B1IFByb3ZpbmNlLCBWaWV0bmFt!3m8!1s0x3175772159101c3f:0xa8ebbbad27835fec!5m2!4m1!1i2!8m2!3d10.3967147!4d107.2680533!16s%2Fg%2F1tfrpdth?entry=ttu&g_ep=EgoyMDI2MDYyMy4wIKXMDSoASAFQAw%3D%3D",
+        phone: "02543 886 216",
+        group: "Resort"
+      },
+      {
+        id: 9,
+        name: "Ocenaward Hotel ",
+        lat: "10.415731341697882",
+        lng: "107.28499599981765",
+        address: "Đ Võ Thị Sáu",
+        linkGoogle: "https://www.google.com/maps/place/Oceanward+Hotels+%26+Resorts/@10.4142664,107.2841979,17.24z/data=!4m12!1m2!2m1!1zTeG7uSBUaHXhuq1uLCBQaHVvYyBIYWkgVG93bnNoaXAsIExvbmcgRGF0IERpc3RyaWN0LCBCw6AgUuG7i2EgLSBWxaluZyBUw6B1IFByb3ZpbmNlLCBWaWV0bmFt!3m8!1s0x317575f9535077c1:0xe2f771049947103a!5m2!4m1!1i2!8m2!3d10.4154319!4d107.2851104!16s%2Fg%2F11gghd_f4t?entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D",
+        phone: "02543 678 679",
+        group: "Hotel"
+      },
+      {
+        id: 10,
+        name: "Kỳ Vân Hotel",
+        lat: "10.416982325109949",
+        lng: "107.28482285753017",
+        address: "Đ Huỳnh Tấn Phát",
+        linkGoogle: "https://www.google.com/maps/place/Kh%C3%A1ch+S%E1%BA%A1n+K%E1%BB%B3+V%C3%A2n/@10.416899,107.2844307,19.04z/data=!4m6!3m5!1s0x317575002e9abea3:0x5ba669b699fdd7bc!8m2!3d10.4169035!4d107.2848302!16s%2Fg%2F11xkzv2d81?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0326 151 152",
+        group: "Hotel"
+      },
+      {
+        id: 11,
+        name: "Xuân Anh Hotel ",
+        lat: "10.416768286213987",
+        lng: "107.28505437758918",
+        address: "Đ Huỳnh Tấn Phát ",
+        linkGoogle: "https://www.google.com/maps/place/Hotel+Xu%C3%A2n+Anh/@10.4166979,107.2850892,21z/data=!4m9!1m2!2m1!1zTeG7uSBUaHXhuq1uLCBQaHVvYyBIYWkgVG93bnNoaXAsIExvbmcgRGF0IERpc3RyaWN0LCBCw6AgUuG7i2EgLSBWxaluZyBUw6B1IFByb3ZpbmNlLCBWaWV0bmFt!3m5!1s0x3175756618e66a89:0x892bd15264ab17a4!8m2!3d10.4167588!4d107.2850531!16s%2Fg%2F11w4n0s4hz?entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0913 178 593",
+        group: "Hotel"
+      },
+      {
+        id: 12,
+        name: "Bella Vita Hotel",
+        lat: "10.41888692909802",
+        lng: "107.28812494012753",
+        address: "Đ Võ Thị Sáu",
+        linkGoogle: "https://www.google.com/maps/place/Kh%C3%A1ch+s%E1%BA%A1n+Bella+Vita+Ph%C6%B0%E1%BB%9Bc+H%E1%BA%A3i+(B%C3%A0+R%E1%BB%8Ba+-+V%C5%A9ng+T%C3%A0u)/@10.4185979,107.2874869,18.17z/data=!4m9!3m8!1s0x317575f83821b223:0xb04b9bb316224cc5!5m2!4m1!1i2!8m2!3d10.4188123!4d107.2881116!16s%2Fg%2F11c5fgsppz?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D",
+        phone: "02543 681 888",
+        group: "Hotel"
+      },
+        {
+        id: 13,
+        name: "A68 Hotel",
+        lat: "10.420850446339966",
+        lng: "107.29054944127289",
+        address: "Đ Trần Hưng Đạo (Bờ Kè Phước Hải)",
+        linkGoogle: "https://www.google.com/maps/place/Nh%C3%A0+h%C3%A0ng+-+Kh%C3%A1ch+s%E1%BA%A1n+A68/@10.4207674,107.2905099,19.79z/data=!4m9!3m8!1s0x31759f48f3d4328f:0xffd6eacf17321c9b!5m2!4m1!1i2!8m2!3d10.4208114!4d107.2905546!16s%2Fg%2F11vl8rc59q?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0931 111 113",
+        group: "Hotel"
+      },
+      {
+        id: 14,
+        name: "Hòang Long Hotel",
+        lat: "10.420989120466253",
+        lng: "107.29071988081621",
+        address: "Đ Trần Hưng Đạo (Bờ Kè Phước Hải)",
+        linkGoogle: "https://www.google.com/maps/place/Ho%C3%A0ng+Long+Hotel/@10.4209411,107.290668,19.79z/data=!4m9!3m8!1s0x31759f6156cbc94f:0x7783be74fc402424!5m2!4m1!1i2!8m2!3d10.4209701!4d107.2907202!16s%2Fg%2F11y0q7z5bh?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0941 415 769",
+        group: "Hotel"
+      },
+      {
+        id: 15,
+        name: "Cherry House Hotel",
+        lat: "10.42558281946631",
+        lng: "107.29559463199884",
+        address: "Đ Trần Hưng Đạo (Bờ Kè Phước Hải)",
+        linkGoogle: "https://www.google.com/maps/place/Cherry+House/@10.425577,107.2955632,20.96z/data=!4m6!3m5!1s0x31759f31568cefe7:0x513ae7d42d3afc3!8m2!3d10.4255683!4d107.2955972!16s%2Fg%2F11kj2d84wj?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0867 678 260",
+        group: "Hotel"
+      },
+      {
+        id: 16,
+        name: "Kim Sơn Hotel",
+        lat: "10.425640518018115",
+        lng: "107.295547008124",
+        address: "Đ Trần Hưng Đạo (Bờ Kè Phước Hải)",
+        linkGoogle: "https://www.google.com/maps/place/Kh%C3%A1ch+s%E1%BA%A1n+Kim+S%C6%A1n+15/@10.4256252,107.2954687,20.96z/data=!4m6!3m5!1s0x31759f7b9372becf:0x694085b121117f35!8m2!3d10.4256043!4d107.2955748!16s%2Fg%2F11z5y7l1sf?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0828 978 978",
+        group: "Hotel"
+      },
+      {
+        id: 17,
+        name: "Cá Nhỏ Homestay",
+        lat: "10.430584288323484",
+        lng: "107.30004587360357",
+        address: "Đ Trần Hưng Đạo (Bờ Kè Phước Hải)",
+        linkGoogle: "https://www.google.com/maps/place/C%C3%A1+Nh%E1%BB%8F+Homestay/@10.4303654,107.2928933,15.5z/data=!4m9!3m8!1s0x31759f004193ca7f:0xcdca4aab9fb98e61!5m2!4m1!1i2!8m2!3d10.4297668!4d107.300135!16s%2Fg%2F11w57t651l?entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+        phone: "0979 962 302",
+        group: "Homestay"
+      },
+      {
+        id: 18,
+        name: "Sơn Hà Homestay",
+        lat: "10.425651947543361",
+        lng: "107.29554182425304",
+        address: "Đ Trần Hưng Đạo (Bờ Kè Phước Hải)",
+        linkGoogle: "https://www.google.com/maps/place/S%C6%A1n+H%C3%A0+Homestay+3/@10.4256356,107.2952319,19.5z/data=!4m6!3m5!1s0x31759f001950a891:0x5f472d3e15a8adaf!8m2!3d10.425586!4d107.2955606!16s%2Fg%2F11wpzslq5_?entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+        phone: "0934 444 094",
+        group: "Homestay"
+      },
+      {
+        id: 19,
+        name: "Sea Breeze Homestay",
+        lat: "10.430712380196887",
+        lng: "107.30070422494661",
+        address: "Đ Lê Lai (Gần Bờ Kè Phước Hải)",
+        linkGoogle: "https://www.google.com/maps/place/Sea+Breeze+Homestay/@10.4307149,107.3006034,20.37z/data=!4m9!3m8!1s0x31756f9fb681642d:0xc75165e9b718c38c!5m2!4m1!1i2!8m2!3d10.430691!4d107.3006992!16s%2Fg%2F11vr95_hcj?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0908 046 908",
+        group: "Homestay"
+      },
+      {
+        id: 20,
+        name: "SALA Homestay",
+        lat: "10.430869004846654",
+        lng: "107.30087485710598",
+        address: "Đ Lê Lai (Gần Bờ Kè Phước Hải)",
+        linkGoogle: "https://www.google.com/maps/place/SALA+Homestay+%26+Coffee+(+Ph%C6%B0%E1%BB%9Bc+H%E1%BA%A3i+)/@10.4307149,107.3006034,20.37z/data=!4m6!3m5!1s0x31759f934c77983f:0xb5be56a332161f7d!8m2!3d10.4308469!4d107.3008791!16s%2Fg%2F11wqntc289?entry=ttu&g_ep=EgoyMDI2MDYyOS4wIKXMDSoASAFQAw%3D%3D",
+        phone: "0901 265 254",
+        group: "Homestay"
+      },
+      {
+        id: 21,
+        name: "Trump Homestay",
+        lat: "10.426151335123594",
+        lng: "107.29494554991709",
+        address: "Đ Ngô Quyền (Gần Bờ Kè Phước Hải)",
+        linkGoogle: "https://www.google.com/maps/place/Trump+Homestay+-+Ph%C6%B0%E1%BB%9Bc+H%E1%BA%A3i%7C+Homestay+Ph%C6%B0%E1%BB%9Bc+H%E1%BA%A3i/@10.4259881,107.2946497,19.5z/data=!4m17!1m7!3m6!1s0x31759f001950a891:0x5f472d3e15a8adaf!2zU8ahbiBIw6AgSG9tZXN0YXkgMw!8m2!3d10.425586!4d107.2955606!16s%2Fg%2F11wpzslq5_!3m8!1s0x31759f14fd29b655:0x8fab073efb5cba22!5m2!4m1!1i2!8m2!3d10.4261085!4d107.2949516!16s%2Fg%2F11vhk5p9p7?entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+        phone: "0943 920 718",
+        group: "Homestay"
+      },
+
+    ],
+
+    init() {
+      this.map = L.map("map").setView([10.41777766582723, 107.2873191383831], 15);
+
+      // 👉 dùng Mapbox (deploy OK)
+      // L.tileLayer(
+      //   "https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/512/{z}/{x}/{y}@2x?access_token=YOUR_TOKEN",
+      //   {
+      //     tileSize: 512,
+      //     zoomOffset: -1
+      //   }
+      // ).addTo(this.map);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(this.map);
+
+      this.stores.forEach(store => {
+        const marker = L.marker([store.lat, store.lng]).addTo(this.map);
+
+        marker.bindPopup(`
+          <b>${store.name}</b><br>☎ &nbsp; ${store.phone}<br>
+          <p>${store.address}</p>
+          <a href=${store.linkGoogle} target="_blank" >&#8594; Xem Đường Đi</a>
+        `);
+
+        this.markers.push({ marker, store });
+      });
+    },
+
+    onSelect(e) {
+      const id = parseInt(e.target.value);
+      const found = this.markers.find(m => m.store.id === id);
+
+      if (found) {
+        this.map.flyTo([found.store.lat, found.store.lng], 15);
+        found.marker.openPopup();
+      }
+    },
+
+    get groupedStores() {
+      const groups = {};
+
+      this.stores.forEach(store => {
+        if (!groups[store.group]) {
+          groups[store.group] = [];
+        }
+        groups[store.group].push(store);
+      });
+
+      return groups;
+    }
+  };
+}
+</script>
+
+</body>
+</html>
