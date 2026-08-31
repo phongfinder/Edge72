@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edge72</title>
 
   <!-- Alpine -->
@@ -12,11 +13,15 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    body { margin: 0; font-family: Arial; }
+     html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
 
     #map {
-      height: 100vh;
-      /* width: 100%; */
+      height: 100dvh; /* 🔥 chuẩn mobile mới */
+      width: 100%;
     }
 
     .topbar {
