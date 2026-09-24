@@ -347,9 +347,12 @@ function app() {
       //     zoomOffset: -1
       //   }
       // ).addTo(this.map);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap"
-      }).addTo(this.map);
+      L.tileLayer("https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_3wiu_1_d69b328580c1f052821621c6").addTo(this.map);
+
+      
+      // L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      //   attribution: "&copy; OpenStreetMap"
+      // }).addTo(this.map);
 
       this.stores.forEach(store => {
         const marker = L.marker([store.lat, store.lng]).addTo(this.map);
